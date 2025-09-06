@@ -101,3 +101,7 @@ pfm-minimal/
 
 MIT License - see LICENSE file for details
 # Test auto-deployment
+
+# 🔄 CI/CD Pipeline Active
+
+This API now auto-deploys from GitHub pushes to the main branch.
