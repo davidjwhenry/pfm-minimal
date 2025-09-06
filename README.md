@@ -100,3 +100,4 @@ pfm-minimal/
 ## 📝 License
 
 MIT License - see LICENSE file for details
+# Test auto-deployment
