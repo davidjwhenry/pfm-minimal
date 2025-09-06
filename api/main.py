@@ -1,7 +1,9 @@
 """Ultra-minimal FastAPI app for Vercel deployment."""
 
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, HTTPException, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional
 
@@ -14,6 +16,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Security
+security = HTTPBearer()
+
+# API Key validation
+def verify_api_key(credentials: HTTPAuthorizationCredentials = Security(security)):
+    """Verify API key from Authorization header."""
+    api_key = os.getenv("PFM_API_KEY", "pfm-dev-key-12345")  # Default for development
+    
+    if credentials.credentials != api_key:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid API key",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return credentials.credentials
 
 class ChatRequest(BaseModel):
     message: str
@@ -41,16 +59,22 @@ def get_advice(message: str) -> str:
 
 @app.get("/")
 async def root():
-    return {"message": "PFM Minimal API", "status": "online"}
+    return {"message": "PFM Minimal API", "status": "online", "auth": "API key required for protected endpoints"}
 
 @app.get("/health")
 async def health():
     return {"status": "healthy", "platform": "vercel"}
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, api_key: str = Depends(verify_api_key)):
+    """Protected endpoint - requires API key."""
     advice = get_advice(request.message)
     return ChatResponse(response=advice, team_used="PFM Team")
+
+# Public endpoint for testing
+@app.get("/public/status")
+async def public_status():
+    return {"status": "online", "message": "Public endpoint - no auth required"}
 
 @app.get("/v1/playground/status")
 async def playground_status():
